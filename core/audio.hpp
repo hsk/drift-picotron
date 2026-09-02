@@ -345,10 +345,19 @@ inline void music(int n) {
         });
         return;
     }
-    // stage-clear (non-final) / game-over stingers: reported as track
-    // pairs 14&15, 16&17 cycling, same paired style as the race BGM. No
-    // confirmed data on how music(5) vs (6) should really differ, so both
-    // just play this same pair sequence.
+    if (n == 5) {
+        // Ordinary (non-final) stage clear. Was sharing music(6)'s track
+        // 14-17 pair sequence, which made a clear and a game-over sound
+        // identical -- reported as "clearing plays the game-over music".
+        // Tracks 11-13 (spd=8, matching tempo, otherwise unused) give
+        // this its own distinct identity instead.
+        audio::start_sequence({
+            {{11, 12, 13}, audio::kSectionLoopSeconds},
+        });
+        return;
+    }
+    // game-over stinger (music(6)): track pairs 14&15, 16&17 cycling,
+    // same paired style as the race BGM.
     audio::start_sequence({
         {{14, 15}, audio::kSectionLoopSeconds},
         {{16, 17}, audio::kSectionLoopSeconds},
