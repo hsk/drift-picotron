@@ -101,24 +101,41 @@ inline void stop_voice(Voice& v) {
     v.track = nullptr;
 }
 
-// start a one-shot (sfx) or looping (music) voice for a track number. If
-// that exact track is already playing, leave it alone (don't restart it)
-// instead of grabbing a new slot -- some call sites (e.g. mycar.hpp's
-// mydrivctrl, matching the original mycar.lua) call sfx() every tick for
-// as long as a condition holds, with no edge detection. Restarting on
-// every one of those calls would re-trigger far faster than the sfx's own
-// tempo, getting stuck retriggering just its first note (heard as a
-// stuck buzz) instead of playing through it; always grabbing a new slot
-// would instead exhaust every slot within a second or two, silently
-// starving later sounds (including music()'s own tracks) of a free voice.
+// start a one-shot (sfx) or looping (music) voice for a track number.
+//
+// If that exact track is already playing AND it's one of the
+// continuous-loop tracks (wants_continuous_loop, currently just 21, tire
+// slip), leave it alone (don't restart it) instead of grabbing a new slot
+// -- mycar.hpp's mydrivctrl (matching mycar.lua) calls sfx(21) every tick
+// for as long as a condition holds, with no edge detection, and
+// restarting on every one of those calls would re-trigger far faster than
+// the sfx's own tempo, getting stuck retriggering just its first note
+// (heard as a stuck buzz) instead of playing through it.
+//
+// For every other track, DO restart it even if already active: those are
+// discrete one-shot events (e.g. signal.hpp's countdown beeps, sfx(19)/
+// (20)) that are meant to sound again each time they're triggered.
+// Without this, a beep triggered again while the previous one was still
+// sitting in its long silent tail (its row data has real notes only in
+// the first few rows, then rests out the remaining ~2s) would be
+// silently dropped -- reported as "pu.....poon" instead of the expected
+// "pu, pu, pu, poon".
 inline bool play_track_no(int track_no, bool loop) {
     const SfxTrackDef* t = find_sfx_track(track_no);
     if (!t) return false;
     std::lock_guard<std::recursive_mutex> lock(voices_mutex);
+    bool continuous = wants_continuous_loop(track_no);
     for (auto& v : voices) {
         if (v.active && v.track == t) {
             v.loop = loop;
-            if (wants_continuous_loop(track_no)) v.keepalive_seconds = kKeepaliveSeconds;
+            if (continuous) {
+                v.keepalive_seconds = kKeepaliveSeconds;
+                return true;
+            }
+            // not a continuous-loop track: fall through and restart it
+            v.row_elapsed_ticks = 0;
+            v.row = 0;
+            v.phase = 0;
             return true;
         }
     }
