@@ -17,6 +17,7 @@
 #include <cstdint>
 #include <vector>
 #include <array>
+#include <mutex>
 
 namespace db {
 
@@ -63,6 +64,14 @@ struct Voice {
 };
 inline std::array<Voice, kMaxVoices> voices;
 
+// `voices` is written by db::sfx()/db::music() on the game thread and read
+// + advanced by render() on the platform's audio callback thread (a
+// separate OS thread on SDL2; will be an interrupt/task context on
+// ESP32-P4 too). Without this, e.g. music() reassigning a voice mid-way
+// through render() stepping it can tear its row/phase state -- observed
+// as playback that never seems to advance past its first note/row.
+inline std::mutex voices_mutex;
+
 inline void stop_voice(Voice& v) {
     v.active = false;
     v.track = nullptr;
@@ -81,6 +90,7 @@ inline void stop_voice(Voice& v) {
 inline bool play_track_no(int track_no, bool loop) {
     const SfxTrackDef* t = find_sfx_track(track_no);
     if (!t) return false;
+    std::lock_guard<std::mutex> lock(voices_mutex);
     for (auto& v : voices) {
         if (v.active && v.track == t) {
             v.loop = loop;
@@ -102,6 +112,7 @@ inline bool play_track_no(int track_no, bool loop) {
 }
 
 inline void stop_all_looping() {
+    std::lock_guard<std::mutex> lock(voices_mutex);
     for (auto& v : voices)
         if (v.active && v.loop) stop_voice(v);
 }
@@ -112,6 +123,7 @@ inline void stop_all_looping() {
 inline void render(float* out, int n_frames, int sample_rate) {
     for (int i = 0; i < n_frames; i++) out[i] = 0;
 
+    std::lock_guard<std::mutex> lock(voices_mutex);
     for (auto& v : voices) {
         if (!v.active || !v.track) continue;
         const SfxTrackDef& t = *v.track;
