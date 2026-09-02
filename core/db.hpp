@@ -249,6 +249,8 @@ struct Input {
     bool keyp1 = false;     // edge-triggered '1' key (speed x1)
     bool keyp2 = false;     // edge-triggered '2' key (speed x2)
     bool keyp_p = false;    // edge-triggered 'p' key (pause toggle)
+    bool keyp_a = false;    // edge-triggered 'a' key (debug/autopilot toggle,
+                             // not in the original -- see app_update())
 };
 inline Input input;
 
@@ -258,6 +260,7 @@ inline bool keyp(char ch) {
         case '1': return input.keyp1;
         case '2': return input.keyp2;
         case 'p': return input.keyp_p;
+        case 'a': return input.keyp_a;
         default: return false;
     }
 }

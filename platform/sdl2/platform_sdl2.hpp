@@ -45,7 +45,7 @@ public:
 
     // Pump events; returns false when the app should quit.
     bool pump_events() {
-        db::input.keyp1 = db::input.keyp2 = db::input.keyp_p = false;
+        db::input.keyp1 = db::input.keyp2 = db::input.keyp_p = db::input.keyp_a = false;
         SDL_Event e;
         while (SDL_PollEvent(&e)) {
             if (e.type == SDL_QUIT) return false;
@@ -54,6 +54,7 @@ public:
                     case SDLK_1: db::input.keyp1 = true; break;
                     case SDLK_2: db::input.keyp2 = true; break;
                     case SDLK_p: db::input.keyp_p = true; break;
+                    case SDLK_a: db::input.keyp_a = true; break;
                     default: break;
                 }
             }

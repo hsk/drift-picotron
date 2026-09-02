@@ -94,6 +94,13 @@ inline void app_update() {
     // control pause
     if (keyp('p')) app.pause_ = 1 - app.pause_;
 
+    // Not in the original app.lua: debug/autopilot toggle for manual
+    // testing (mydrivctrl() vs mydrivauto() in mycar.hpp's mydriv() is
+    // already gated on app.debug_, matching mycar.lua exactly -- this
+    // just exposes a way to flip it at runtime instead of only via a
+    // held-down "start" button combo).
+    if (keyp('a')) app.debug_ = 1 - app.debug_;
+
     // update frame
     if (app.cycle_ == 0) {
         // control button
