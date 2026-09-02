@@ -1,6 +1,7 @@
 // race.hpp : race state (timer, rank tracking, clear/over flags)
 #pragma once
 #include "db.hpp"
+#include "rival.hpp"
 
 namespace db {
 
@@ -36,8 +37,17 @@ inline void rcrset() {
 
 inline void rcloop() {
     if (race.myc_ < 0) {
+        // race.rnk_[i] holds which car-index finished in placement i.
+        // rank.hpp always assigns mycar the car-index rival.n_ (the slot
+        // right after the last rival) -- the original hardcoded this as
+        // `7` since rival.n_ was always 7 (a full 7-rival field). With
+        // rival.hpp currently stubbed to n_ = 0, mycar's car-index is 0,
+        // not 7, so this has to track rival.n_ instead of the constant or
+        // a finished race could never be detected as "cleared". Once
+        // rival.lua is for-real ported (n_ back to 7) this is a no-op
+        // change -- rival.n_ will equal 7 again.
         for (int i = 0; i < 8; i++)
-            if (race.rnk_[i] == 7) race.myc_ = i;
+            if (race.rnk_[i] == rival.n_) race.myc_ = i;
     }
     if (race.tim_ < 60 * 60 * 60 - 1 && race.myc_ < 0) {
         race.tim_ += race.str_ * app.vsync_;
