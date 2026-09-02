@@ -1,9 +1,9 @@
 // app.hpp : application
 //
-// Mirrors app.lua/app.py. rank/navi/cockpit/back (HUD polish) and rival
-// (AI cars, deliberately deferred) are still stubs -- see their headers.
-// Everything else (title, race flow, course, objects, player car, signal,
-// clear/over) is wired up.
+// Mirrors app.lua/app.py. navi/cockpit (mini-map, dashboard overlay) are
+// still no-op stubs -- see their headers. Everything else (title, race
+// flow, course, background, objects, player car, rival AI, rank/finish
+// tracking, signal, clear/over) is wired up.
 #pragma once
 #include "db.hpp"
 #include "sp.hpp"
