@@ -245,12 +245,25 @@ inline void render(float* out, int n_frames, int sample_rate) {
 }
 
 // track numbering per tools/gen_sfx_data.py: tracks 0-7 are one 8-part BGM
-// section, 8-17 a second section, and 18-23 map 1:1 to the game's
-// sfx(18..23) one-shots. ~4.27s = one 64-row loop at spd=8, 120 ticks/sec.
+// section (spd=8) and 18-23 map 1:1 to the game's sfx(18..23) one-shots.
+// Tracks 8-17 looked like one more section at first, but tracks 8-10 run
+// at spd=6 (not 8, so they drift out of tempo against everything else)
+// and their volume column fades out to ~0 by the end of the track --
+// characteristic of a one-shot ending chord, not a section meant to loop
+// forever alongside the rest. Reported as "too many/cluttered notes" when
+// all ten were mixed together. Splitting them: 11-17 (spd=8, matching
+// tempo) is section B of the main loop; 8-10 is reserved as a short
+// ending stinger for the stage-clear/game-over cues instead.
+// ~4.27s = one 64-row loop at spd=8, 120 ticks/sec.
 constexpr double kSectionLoopSeconds = 64.0 * 8.0 / kTicksPerSecond;
 
-inline const std::vector<int>& fanfare_group() {
-    static const std::vector<int> g = {8, 9, 10, 11, 12, 13, 14, 15, 16, 17};
+inline const std::vector<int>& section_b_group() {
+    static const std::vector<int> g = {11, 12, 13, 14, 15, 16, 17};
+    return g;
+}
+
+inline const std::vector<int>& ending_group() {
+    static const std::vector<int> g = {8, 9, 10};
     return g;
 }
 
@@ -271,7 +284,7 @@ inline void music(int n) {
         // "long" vs "short" is a guess; swap the A/B stages below if it
         // turns out backwards.
         static const std::vector<int> section_a = {0, 1, 2, 3, 4, 5, 6, 7};
-        const std::vector<int>& section_b = audio::fanfare_group();
+        const std::vector<int>& section_b = audio::section_b_group();
         audio::start_sequence({
             {section_a, audio::kSectionLoopSeconds},
             {section_a, audio::kSectionLoopSeconds},
@@ -280,9 +293,10 @@ inline void music(int n) {
         });
         return;
     }
-    // stage-clear / game-over stingers: just loop the second section once
-    // per call, no confirmed data on how these should really differ.
-    for (int track_no : audio::fanfare_group())
+    // stage-clear / game-over stingers: the short fade-out chord (see
+    // ending_group's comment above). No confirmed data on how music(4) vs
+    // (5) vs (6) should really differ, so all three just play this once.
+    for (int track_no : audio::ending_group())
         audio::play_track_no(track_no, true);
 }
 
