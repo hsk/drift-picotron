@@ -292,16 +292,6 @@ inline void render(float* out, int n_frames, int sample_rate) {
 // ~4.27s = one 64-row loop at spd=8, 120 ticks/sec.
 constexpr double kSectionLoopSeconds = 64.0 * 8.0 / kTicksPerSecond;
 
-inline const std::vector<int>& section_b_group() {
-    static const std::vector<int> g = {11, 12, 13, 14, 15, 16, 17};
-    return g;
-}
-
-inline const std::vector<int>& ending_group() {
-    static const std::vector<int> g = {8, 9, 10};
-    return g;
-}
-
 } // namespace audio
 
 inline void sfx(int n) {
@@ -326,11 +316,14 @@ inline void music(int n) {
         });
         return;
     }
-    // stage-clear / game-over stingers: the short fade-out chord (see
-    // ending_group's comment above). No confirmed data on how music(4) vs
-    // (5) vs (6) should really differ, so all three just play this once.
-    for (int track_no : audio::ending_group())
-        audio::play_track_no(track_no, true);
+    // stage-clear / game-over stingers: reported as track pairs 14&15,
+    // 16&17 cycling, same paired style as the race BGM. No confirmed data
+    // on how music(4) vs (5) vs (6) should really differ, so all three
+    // just play this same pair sequence.
+    audio::start_sequence({
+        {{14, 15}, audio::kSectionLoopSeconds},
+        {{16, 17}, audio::kSectionLoopSeconds},
+    });
 }
 
 } // namespace db
