@@ -123,6 +123,11 @@ inline void app_update() {
 // draw
 inline void app_draw() {
     if (app.cycle_ == 0) {
+        // app.lua has this commented out (`-- cls(0x01)`) -- Picotron
+        // likely clears its screen userdata for you between frames. Our
+        // framebuffer is just a persistent buffer, so skipping this would
+        // leave every previous frame's sprites smeared across the screen.
+        cls(0x01);
         spdraw();
     }
 }
