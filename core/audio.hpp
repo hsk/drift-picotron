@@ -278,18 +278,16 @@ inline void music(int n) {
     audio::stop_all_looping();
     if (n < 0) return;
     if (n == 0) {
-        // Race BGM: reportedly long,long,short,short (repeating) -- four
-        // explicit re-triggers of two track groups, since (per the
-        // MusicStage comment above) no track loops itself. Which group is
-        // "long" vs "short" is a guess; swap the A/B stages below if it
-        // turns out backwards.
-        static const std::vector<int> section_a = {0, 1, 2, 3, 4, 5, 6, 7};
-        const std::vector<int>& section_b = audio::section_b_group();
+        // Race BGM: reported as track pairs 01,23,45,67 cycling -- two
+        // tracks (one melodic-ish even track, one drone-ish odd track,
+        // matching wave_for_track's split) playing together at a time,
+        // not all eight mixed into one wall of sound (which is what made
+        // it sound cluttered/stuck-buzzing before).
         audio::start_sequence({
-            {section_a, audio::kSectionLoopSeconds},
-            {section_a, audio::kSectionLoopSeconds},
-            {section_b, audio::kSectionLoopSeconds},
-            {section_b, audio::kSectionLoopSeconds},
+            {{0, 1}, audio::kSectionLoopSeconds},
+            {{2, 3}, audio::kSectionLoopSeconds},
+            {{4, 5}, audio::kSectionLoopSeconds},
+            {{6, 7}, audio::kSectionLoopSeconds},
         });
         return;
     }
