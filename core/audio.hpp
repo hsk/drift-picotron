@@ -73,7 +73,17 @@ struct Voice {
     double row_elapsed_ticks = 0; // ticks elapsed within the current row
     int row = 0;
     double phase = 0; // oscillator phase, 0..1
+    // Watchdog for continuous-loop sfx (see wants_continuous_loop): those
+    // have no explicit "stop" signal in the original game code, only a
+    // condition that's re-checked and re-triggers sfx() every tick for as
+    // long as it holds. Once looping is added, that means the *only* way
+    // to know the condition stopped holding is that play_track_no() also
+    // stops being called for it -- without this, a voice that ever starts
+    // never gets told to stop and loops forever (reported: "keeps
+    // sounding even when not sliding").
+    double keepalive_seconds = 0;
 };
+constexpr double kKeepaliveSeconds = 0.15; // a few game ticks of margin
 inline std::array<Voice, kMaxVoices> voices;
 
 // `voices` is written by db::sfx()/db::music() on the game thread and read
@@ -108,6 +118,7 @@ inline bool play_track_no(int track_no, bool loop) {
     for (auto& v : voices) {
         if (v.active && v.track == t) {
             v.loop = loop;
+            if (wants_continuous_loop(track_no)) v.keepalive_seconds = kKeepaliveSeconds;
             return true;
         }
     }
@@ -119,6 +130,7 @@ inline bool play_track_no(int track_no, bool loop) {
             v.row_elapsed_ticks = 0;
             v.row = 0;
             v.phase = 0;
+            v.keepalive_seconds = wants_continuous_loop(track_no) ? kKeepaliveSeconds : 0;
             return true;
         }
     }
@@ -213,8 +225,13 @@ inline void render(float* out, int n_frames, int sample_rate) {
 
     std::lock_guard<std::recursive_mutex> lock(voices_mutex);
     advance_sequence_locked((double)n_frames / sample_rate);
+    double dt_seconds = (double)n_frames / sample_rate;
     for (auto& v : voices) {
         if (!v.active || !v.track) continue;
+        if (v.keepalive_seconds > 0) {
+            v.keepalive_seconds -= dt_seconds;
+            if (v.keepalive_seconds <= 0) { stop_voice(v); continue; }
+        }
         const SfxTrackDef& t = *v.track;
         double ticks_per_sample = kTicksPerSecond / sample_rate;
         // Every extracted track has loop0 >= loop1 in the general sense
