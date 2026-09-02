@@ -2,10 +2,10 @@
 //
 // Mirrors app.lua/app.py. Every module (title, race flow, course,
 // background, objects, player car, rival AI, rank/finish tracking, signal,
-// clear/over, mini-map, dashboard HUD) is wired up. Sound (sfx/0.sfx) is
-// the one deliberately-deferred piece -- see db.hpp's sfx()/music().
+// clear/over, mini-map, dashboard HUD, audio) is wired up.
 #pragma once
 #include "db.hpp"
+#include "audio.hpp"
 #include "sp.hpp"
 #include "bg.hpp"
 #include "color.hpp"
