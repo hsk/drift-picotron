@@ -216,12 +216,30 @@ inline void mydrivctrl() {
 inline void mydrivauto() {
     // Not in the original mycar.lua (which just relaxes hdl_ straight to
     // 0 here) -- this function only ever runs in the app.debug_ autopilot
-    // dev mode (see app.hpp's 'a' key toggle), so making it wobble the
-    // wheel doesn't touch normal manual play at all. Requested so the
-    // steering-warning buzz (sfx(21), mydrivctrl()'s `abs(hdl_) > 0.75`)
-    // and the camera roll mycamr() derives from hdl_ are still
-    // audible/visible while auto-driving instead of always sitting at 0.
-    mycar.hdl_ = 0.9 * dsin(mycar.lpd_ * 0.05);
+    // dev mode (see app.hpp's 'a' key toggle), so this doesn't touch
+    // normal manual play at all. Requested so the steering-warning buzz
+    // (sfx(21), mydrivctrl()'s `abs(hdl_) > 0.75`) and the camera roll
+    // mycamr() derives from hdl_ are still audible/visible while
+    // auto-driving. Two earlier attempts (constant sine wobble, then an
+    // analog ease-toward-curvature) both felt wrong -- "shaking the whole
+    // time" instead of an actual button press. This instead simulates a
+    // real digital LEFT/RIGHT press (sx = -1/0/1 from the upcoming
+    // curve's direction, with a deadzone on straights) and runs it
+    // through mydrivctrl()'s own steering formula, so it behaves exactly
+    // like a human mashing the direction keys: snaps toward full lock
+    // while actively cornering, relaxes to 0 on straights.
+    int sx = 0;
+    if (course.crv_[mycar.lpi_] > 0.5) sx = 1;
+    else if (course.crv_[mycar.lpi_] < -0.5) sx = -1;
+    double s = mycar.spd_ > 0 ? std::max(0.375, mycar.spd_) : 0;
+    double steer_h = mycar.hdp_ * sx * s * s;
+    if (steer_h == 0) {
+        mycar.hdl_ -= std::min(mycar.hdp_, std::max(-mycar.hdp_, mycar.hdl_));
+    } else if (mycar.hdl_ * steer_h > 0) {
+        mycar.hdl_ = std::min(1.0, std::max(-1.0, mycar.hdl_ + steer_h));
+    } else {
+        mycar.hdl_ = std::min(1.0, std::max(-1.0, steer_h));
+    }
     mymove();
     mycamr();
     double h = 0;
