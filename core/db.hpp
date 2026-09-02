@@ -105,6 +105,39 @@ struct Bg {
 };
 inline Bg bg;
 
+// Race and Rival state live here (rather than in race.hpp/rival.hpp) so
+// those two headers can freely reference each other's fields (rvloop()
+// reads race.flg_/race.lop_, rcloop() reads rival.n_) without an
+// #include cycle -- both headers still hold the actual logic functions.
+struct Race {
+    int stg_ = 0;   // current stage (1-based, matches course.lua's data table)
+    int stn_ = 0;   // stage count
+    int lop_ = 0;   // laps
+    double tim_ = 0;
+    int rnk_[8] = {};
+    int myc_ = 0;
+    int str_ = 0;
+    int clr_ = 0;
+    int ovr_ = 0;
+    int flg_ = 0;
+};
+inline Race race;
+
+struct Rival {
+    int n_ = 0;
+    int spr_ = 384;
+    double dst_[7] = {}, lpd_[7] = {}, sde_[7] = {};
+    int lpc_[7] = {}, lpi_[7] = {};
+    int rnk_[7][2] = {};
+    double mov_[7][2] = {};
+    double spd_[7] = {}, spa_[7] = {};
+    double hdl_[7] = {}, hds_[7] = {};
+    double hdp_ = 0;
+    double pos_[7][3] = {};
+    int smk_[7] = {};
+};
+inline Rival rival;
+
 inline std::vector<std::unique_ptr<Userdata>> spr_bank; // 256 background-derived sprite pages
 inline void set_spr(int n, Userdata ud) {
     if ((int)spr_bank.size() <= n) spr_bank.resize(n + 1);

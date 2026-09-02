@@ -1,23 +1,12 @@
-// race.hpp : race state (timer, rank tracking, clear/over flags)
+// race.hpp : race logic (timer, rank tracking, clear/over flags)
+//
+// The Race and Rival state structs both live in db.hpp (not here or in
+// rival.hpp) specifically so this file and rival.hpp can reference each
+// other's fields without an #include cycle -- see db.hpp's comment there.
 #pragma once
 #include "db.hpp"
-#include "rival.hpp"
 
 namespace db {
-
-struct Race {
-    int stg_ = 0;   // current stage (1-based, matches course.lua's data table)
-    int stn_ = 0;   // stage count
-    int lop_ = 0;   // laps
-    double tim_ = 0;
-    int rnk_[8] = {};
-    int myc_ = 0;
-    int str_ = 0;
-    int clr_ = 0;
-    int ovr_ = 0;
-    int flg_ = 0;
-};
-inline Race race;
 
 inline void rcinit() {
     race.stn_ = 5;
