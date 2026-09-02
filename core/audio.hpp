@@ -33,12 +33,16 @@ inline double pitch_to_freq(int pitch) {
 
 enum class Wave { Square, Triangle, Saw };
 
-inline Wave inst_to_wave(int inst) {
-    switch (inst) {
-        case 2: return Wave::Triangle;
-        case 4: return Wave::Saw;
-        default: return Wave::Square;
-    }
+// Deliberately NOT keyed off the row's real `inst` id: sections A (tracks
+// 0-7) and B (tracks 8-17, see the MusicStage comment below) happen to
+// lean on different inst ids in the source data (mostly square/saw vs
+// mostly triangle), so picking the waveform from `inst` made the whole
+// mix's timbre visibly change every time the section sequencer switched
+// -- reported as "the timbre changed" once section B kicked in. Keying off
+// the track number instead keeps the same square/triangle pattern in both
+// sections since it doesn't depend on which section's data is playing.
+inline Wave wave_for_track(int track_no) {
+    return (track_no % 2 == 0) ? Wave::Square : Wave::Triangle;
 }
 
 inline double wave_sample(Wave w, double phase01) {
@@ -211,7 +215,7 @@ inline void render(float* out, int n_frames, int sample_rate) {
             int vol = t.vol[v.row];
             if (pitch != 0xff && vol != 0xff && vol > 0) {
                 double freq = pitch_to_freq(pitch);
-                Wave w = inst_to_wave(t.inst[v.row] == 0xff ? 0 : t.inst[v.row]);
+                Wave w = wave_for_track(t.track_no);
                 double amp = (vol / 64.0) * 0.12; // headroom: up to ~8 simultaneous voices
                 out[i] += (float)(wave_sample(w, v.phase) * amp);
                 v.phase += freq / sample_rate;
