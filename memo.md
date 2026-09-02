@@ -1,0 +1,281 @@
+- main.lua
+    - [x] app.lua
+        - [x] sp.lua
+            - [x] spinit
+                - spreset
+            - [x] spreset
+            - [x] spchr
+            - [x] spofs
+            - [x] sphome
+            - [x] sprot
+            - [x] spcolor
+            - [x] sppage
+            - [x] spshow
+            - [x] spsspr
+                - sspr
+            - [x] sprspr
+                - tline3d
+            - [x] spqsort
+                - spqsort
+            - [x] spdraw
+                - add
+                - spqsort
+                - pal
+                - spsspr
+        - [x] bg.lua
+            - [x] bginit
+            - [x] bgscreen
+            - [x] bgofs
+            - [x] bghome
+            - [x] bgrot
+            - [x] bgput
+                - mset
+            - [x] bgfill
+                - mset
+            - [x] bgshow
+            - [x] bgdraw
+                - map
+        - [x] color.lua
+            - [x] clinit
+        - [x] chara.lua
+            - [x] chinit
+                - [x] chinitspr
+                    - userdata
+                    - tonumber
+                    - app.gpage3_:set
+                    - app.gpage3_:get
+                - [x] chinitbg
+                    - userdata
+                    - app.gpage3_:set
+                    - app.gpage3_:get
+        - [x] pause.lua
+            - [x] psinit
+                - [x] psreset
+                    - spchr
+                    - spofs
+                    - sphome
+                    - spscale
+            - [x] psloop
+            - [x] psdraw
+                - spshow
+                - spdraw
+        - [x] title.lua
+            - [x] tlinit
+                - userdata
+                - app.color_
+                - app.gpage1_:set
+            - [x] tlloop
+                - tlloop0
+                - tlloop1
+                - tlloop2
+                - tlloop3
+                - tldraw
+            - [x] tlloop0
+                - sprest
+                - psrset
+            - [x] tlloop1
+                - app.gpage2_:get
+                - app.color_
+                - spchr
+                - sphome
+                - car.chr_
+                - spofs
+                - spscale
+                - sppage
+                - spcolor
+                - app.state_
+            - [x] tlloop2
+                - app.be_
+                - app.debug_
+                - tlrotate
+                - app.vsync_
+            - [x] tlloop3
+                - tlrotate
+                - app.vsync_
+            - [x] tlrotate
+                - app.vsync_
+            - [x] tldraw
+                - app.zn_
+                - app.or_
+                - spofs
+                - spscale
+                - sprot
+                - spshow
+                - sphide
+        - [x] game.lua
+            - [x] gminit
+            - [x] gmloop
+                - [x] gmloop0
+                    - race.stg_
+                    - sprset
+                    - psrset
+                    - app.state_
+                - [x] gmloop1
+                    - rcrset
+                    - csmake
+                    - obmake
+                    - rvrset
+                    - myrset
+                    - sgrset
+                    - rkrset
+                    - gcrset
+                    - gorset
+                    - nvrset
+                    - cprset
+                    - bkrset
+                    - app.sound_
+                    - music
+                    - game.t_
+                    - app.state_
+                - [x] gmloop2
+                    - race.clr_
+                    - race.ovr_
+                    - music
+                    - race.stg_
+                    - race.stn_
+                    - app.sound_
+                    - app.be_
+                    - app.state_
+                    - app.proc_
+                - rcloop
+                - csloop
+                - obloop
+                - rvloop
+                - myloop
+                - sgloop
+                - rkloop
+                - gcloop
+                - goloop
+                - nvloop
+                - cploop
+                - bkloop
+                - rcdraw
+                - csdraw
+                - obdraw
+                - rvdraw
+                - mydraw
+                - sgdraw
+                - rkdraw
+                - gcdraw
+                - godraw
+                - nvdraw
+                - cpdraw
+                - bkdraw
+        - [x] race.lua
+            - [x] rcinit
+            - [x] rcrset
+            - [x] rcloop
+                - app.vsync_
+            - [x] rcdraw
+        - [x] cam.lua
+            - [x] cminit
+        - [ ] course.lua
+            - [ ] csinit
+            - [ ] csmake
+            - [ ] csread
+            - [ ] cstabl
+            - [ ] csspln
+            - [ ] csdidx
+            - [ ] csdxyz
+            - [ ] csloop
+            - [ ] csdraw
+        - [ ] obj.lua
+            - [ ] obinit
+            - [ ] obmake
+            - [x] obloop
+            - [ ] obdraw
+        - [ ] car.lua
+            - [ ] cainit
+        - [ ] rival.lua
+            - [ ] rvinit
+            - [ ] rvrset
+            - [ ] rvloop
+            - [ ] rvdraw
+        - [ ] mycar.lua
+            - [ ] myinit
+            - [ ] myrset
+            - [ ] myloop
+            - [ ] mystrt
+            - [ ] myrest
+            - [ ] mydriv
+            - [ ] mydrivctrl
+            - [ ] mydrivauto
+            - [ ] mycrsh
+            - [ ] myfall
+            - [ ] mymove
+            - [ ] mycamr
+            - [ ] mychit
+            - [ ] mydraw
+        - [ ] signal.lua
+            - [ ] sginit
+            - [ ] sgrset
+            - [ ] sgloop
+            - [ ] sgdraw
+        - [ ] rank.lua
+            - [ ] rkinit
+            - [ ] rkrset
+            - [ ] rkqsort
+            - [ ] rkloop
+            - [ ] rkdraw
+        - [ ] clear.lua
+            - [ ] gcinit
+            - [ ] gcrest
+            - [ ] gcloop
+            - [ ] gcdraw
+        - [ ] over.lua
+            - [ ] goinit
+            - [ ] gorset
+            - [ ] goloop
+            - [ ] godraw
+        - [ ] navi.lua
+            - [ ] nvinit
+            - [ ] nvrset
+            - [ ] nvloop
+            - [ ] nvdraw
+        - [ ] cockpit.lua
+            - [ ] cpinit
+            - [ ] cprset
+            - [ ] cploop
+            - [ ] cpdraw
+        - [ ] back.lua
+            - [ ] bkinit
+            - [ ] bkrset
+            - [ ] bkloop
+            - [ ] bkdraw
+            - [ ] bkbgput
+            - [ ] bkbgfill
+            - [ ] bkbgcopy
+        - [x] app_init
+            - spinit
+            - bginit
+            - clinit
+            - chinit
+            - psinit
+            - gminit
+            - rcinit
+            - cminit
+            - csinit
+            - obinit
+            - cainit
+            - rvinit
+            - myinit
+            - sginit
+            - rkinit
+            - gcinit
+            - goinit
+            - nvinit
+            - cpinit
+            - bkinit
+        - [x] app_update
+            - psloop
+            - psdraw
+            - app.proc_
+                - tlloop
+        - [x] app_draw
+            - spdraw
+    - [x] _init
+        - app_init
+    - [x] _update
+        - app_update
+    - [x] _draw
+        - app_draw
