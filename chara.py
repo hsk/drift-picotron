@@ -4,10 +4,10 @@ import db
 # initialize sprite character
 def chinitspr():
 	# initialize vars
-	db.app.gpage2_ = userdata('u8', 256, 512)
+	db.app.gpage2_ = db.userdata('u8', 256, 512)
 	for y in range(512):
 		for x in range(256):
-			db.app.gpage2_:set(x, y, 0x3f)
+			db.app.gpage2_.set(x, y, 0x3f)
 	# data
 	data = [
         0, 0, 30, 7,
@@ -576,41 +576,42 @@ def chinitspr():
         "2120002112211122122120021112002111202112002120021202112212212",
         "0200000220022200200200002220000222000220000200002000220020020",
         -1,
-   	]
+	]
 
-   	# set sprite
-   	local i = 1
-   	while data[i] ~= -1 do
-   		local u = data[i + 0]
-   		local v = data[i + 1]
-   		local w = data[i + 2]
-   		local h = data[i + 3]
-   		i = i + 4
-		local s = data[i]
+	# set sprite
+	i = 0
+	while data[i] != -1:
+		u = data[i + 0]
+		v = data[i + 1]
+		w = data[i + 2]
+		h = data[i + 3]
+		i = i + 4
+		s = data[i]
 		i = i + 1
-		local col = {}
-		for j = 1, 8, 1 do
-			local t = (j - 1) * 2 + 1
-			col[j] = db.app.color_[tonumber('0x' .. string.sub(s, t, t + 1)) + 1]
-		for y = 0, h - 1, 1 do
-			local s = data[i]
+		col = []
+		for j in range(8):
+			t = j * 2
+			col.append(db.app.color_[int(s[t:t + 2], 16)])
+		for y in range(h):
+			row = data[i]
 			i = i + 1
-			for x = 0, w - 1, 1 do
-				local c = tonumber(s[x + 1])
-				if c > 0 then
-					db.app.gpage2_:set(u + x, v + y, col[c + 1])
+			for x in range(w):
+				c = int(row[x])
+				if c > 0:
+					idx = c if c < len(col) else len(col) - 1
+					db.app.gpage2_.set(u + x, v + y, col[idx])
 
 # initialize bg character
 def chinitbg():
 
 	# initialize vars
-	db.app.gpage3_ = userdata('u8', 256, 512)
-	for y = 0, 511, 1 do
-		for x = 0, 511, 1 do
-			db.app.gpage3_:set(x, y, 0x3f)
+	db.app.gpage3_ = db.userdata('u8', 256, 512)
+	for y in range(512):
+		for x in range(512):
+			db.app.gpage3_.set(x, y, 0x3f)
 
 	# data
-	local data = [
+	data = [
         1, 0, 4, 1,
         "0f3c22200f0f0f0f",
         "22222222222222222222222222222222",
@@ -652,44 +653,45 @@ def chinitbg():
         "1111111122222222",
         "1111111122222222",
         -1,
-   	]
+	]
 
-   	# set bg
-   	local i = 1
-   	while data[i] ~= -1 do
-   		local u = data[i + 0] * 16
-   		local v = data[i + 1] * 16
-   		local w = data[i + 2] * 8
-   		local h = data[i + 3] * 8
-   		i = i + 4
-   		local s = data[i]
-   		i = i + 1
-		local col = {}
-		for j = 1, 8, 1 do
-			local t = (j - 1) * 2 + 1
-			col[j] = db.app.color_[tonumber('0x' .. string.sub(s, t, t + 1)) + 1]
-		for y = 0, h - 1, 1 do
-			local s = data[i]
+	# set bg
+	i = 0
+	while data[i] != -1:
+		u = data[i + 0] * 16
+		v = data[i + 1] * 16
+		w = data[i + 2] * 8
+		h = data[i + 3] * 8
+		i = i + 4
+		s = data[i]
+		i = i + 1
+		col = []
+		for j in range(8):
+			t = j * 2
+			col.append(db.app.color_[int(s[t:t + 2], 16)])
+		for y in range(h):
+			row = data[i]
 			i = i + 1
-			for x = 0, w - 1, 1 do
-				local c = tonumber(s[x + 1])
-				if c > 0 then
-					c = col[c + 1]
-					db.app.gpage3_:set(u + x * 2 + 0, v + y * 2 + 0, c)
-					db.app.gpage3_:set(u + x * 2 + 1, v + y * 2 + 0, c)
-					db.app.gpage3_:set(u + x * 2 + 0, v + y * 2 + 1, c)
-					db.app.gpage3_:set(u + x * 2 + 1, v + y * 2 + 1, c)
+			for x in range(w):
+				c = int(row[x])
+				if c > 0:
+					idx = c if c < len(col) else len(col) - 1
+					c2 = col[idx]
+					db.app.gpage3_.set(u + x * 2 + 0, v + y * 2 + 0, c2)
+					db.app.gpage3_.set(u + x * 2 + 1, v + y * 2 + 0, c2)
+					db.app.gpage3_.set(u + x * 2 + 0, v + y * 2 + 1, c2)
+					db.app.gpage3_.set(u + x * 2 + 1, v + y * 2 + 1, c2)
 
 	# bg to spr
-	for n = 0, 255, 1 do
-		local u = n % 32
-		local v = n // 32
-		local ud = userdata('u8', 16, 16)
-		for y = 0, 15, 1 do
-			for x = 0, 15, 1 do
-				local c = db.app.gpage3_:get(u * 16 + x, v * 16 + y)
-				ud:set(x, y, c)
-		set_spr(n, ud)
+	for n in range(256):
+		u = n % 32
+		v = n // 32
+		ud = db.userdata('u8', 16, 16)
+		for y in range(16):
+			for x in range(16):
+				c = db.app.gpage3_.get(u * 16 + x, v * 16 + y)
+				ud.set(x, y, c)
+		db.set_spr(n, ud)
 
 # initialize character
 def chinit():

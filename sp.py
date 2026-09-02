@@ -17,19 +17,16 @@ class Sp:
         self.scale_y = 1
         self.rot = 0
         self.color = 0x07
-        self.page = app.gpage2_
+        self.page = db.app.gpage2_
         self.show = False
 
 # initialize sprite
 def spinit():
-    if not db.sp:
-        db.sp = []
     sprset()
 
 # reset sprite
 def sprset():
-    for i in range(512):
-        db.sp[i] = Sp()
+    db.sp = [Sp() for _ in range(512)]
 
 # set sprite character
 def spchr(n, u, v, w, h, a):
@@ -89,7 +86,7 @@ def spsspr(sprite, u, v, w, h, x, y, offset_x, offset_y, scale_x, scale_y, a):
     flip_x = False
     if (a & 0b00001000) != 0:
         flip_x = True
-    sspr(
+    db.sspr(
         sprite,
         u,
         v,
@@ -101,12 +98,14 @@ def spsspr(sprite, u, v, w, h, x, y, offset_x, offset_y, scale_x, scale_y, a):
         h * scale_y,
         flip_x
     )
+
 class UV:
-    def __init__(u,v):
+    def __init__(self, u, v):
         self.u = u
         self.v = v
+
 class XY:
-    def __init__(x,y):
+    def __init__(self, x, y):
         self.x = x
         self.y = y
 
@@ -116,21 +115,25 @@ def sprspr(sprite, u, v, w, h, x, y, offset_x, offset_y, scale_x, scale_y, rotat
     # [1] - [2]
     #  |     |
     # [3] - [4]
+    #
+    # NOTE: uv/xy/id below keep Lua's 1-based indexing (index 0 is an
+    # unused placeholder) to mirror the original geometry code exactly.
 
     # calc uv vectors
     uv = [
-        UV(u,v),
+        None,
+        UV(u, v),
         UV(u + w - 1, v),
         UV(u, v + h - 1),
-        UV(u + w - 1, v = v + h - 1),
+        UV(u + w - 1, v + h - 1),
     ]
     if (a & 0b00001000) != 0:
         uv[1].u, uv[2].u = uv[2].u, uv[1].u
         uv[3].u, uv[4].u = uv[4].u, uv[3].u
 
     # calc xy vectors
-    sin_r = sin(rotate)
-    cos_r = cos(rotate)
+    sin_r = db.sin(rotate)
+    cos_r = db.cos(rotate)
     x0 = -offset_x
     y0 = -offset_y
     x1 = x0 + w
@@ -140,31 +143,30 @@ def sprspr(sprite, u, v, w, h, x, y, offset_x, offset_y, scale_x, scale_y, rotat
     x1 = x1 * scale_x - 1
     y1 = y1 * scale_y - 1
     xy = [
-        XY(ceil((x0 * cos_r - y0 * sin_r) + x),
-           ceil((x0 * sin_r + y0 * cos_r) + y)),
-        XY(ceil((x1 * cos_r - y0 * sin_r) + x),
-           ceil((x1 * sin_r + y0 * cos_r) + y)),
-        XY(ceil((x0 * cos_r - y1 * sin_r) + x),
-           ceil((x0 * sin_r + y1 * cos_r) + y)),
-        XY(ceil((x1 * cos_r - y1 * sin_r) + x),
-           ceil((x1 * sin_r + y1 * cos_r) + y)),
+        None,
+        XY(db.ceil((x0 * cos_r - y0 * sin_r) + x),
+           db.ceil((x0 * sin_r + y0 * cos_r) + y)),
+        XY(db.ceil((x1 * cos_r - y0 * sin_r) + x),
+           db.ceil((x1 * sin_r + y0 * cos_r) + y)),
+        XY(db.ceil((x0 * cos_r - y1 * sin_r) + x),
+           db.ceil((x0 * sin_r + y1 * cos_r) + y)),
+        XY(db.ceil((x1 * cos_r - y1 * sin_r) + x),
+           db.ceil((x1 * sin_r + y1 * cos_r) + y)),
     ]
 
     # calc index
-    id = {}
     if xy[1].y <= xy[2].y:
         if xy[1].y < xy[3].y:
-            id = [1, 2, 3, 4]
+            id = [None, 1, 2, 3, 4]
         elif xy[3].y < xy[4].y:
-            id = [3, 1, 4, 2]
+            id = [None, 3, 1, 4, 2]
         else:
-            id = [4, 3, 2, 1]
-
+            id = [None, 4, 3, 2, 1]
     else:
         if xy[2].y <= xy[4].y:
-            id = [2, 4, 1, 3]
+            id = [None, 2, 4, 1, 3]
         else:
-            id = [4, 3, 2, 1]
+            id = [None, 4, 3, 2, 1]
 
     # draw sprite
     if xy[id[1]].y == xy[id[2]].y:
@@ -173,18 +175,18 @@ def sprspr(sprite, u, v, w, h, x, y, offset_x, offset_y, scale_x, scale_y, rotat
         ru = uv[id[4]].u - uv[id[2]].u
         rv = uv[id[4]].v - uv[id[2]].v
         d = xy[id[3]].y - xy[id[1]].y
-        for i in range(d):
+        for i in range(d + 1):
             x0 = xy[id[1]].x
             x1 = xy[id[4]].x
-            y = xy[id[1]].y + i
-            if x0 < 480 and x1 >= 0 and y >= 0 and y < 270:
-                t = i / d
-                tline3d(
+            yy = xy[id[1]].y + i
+            if x0 < 480 and x1 >= 0 and yy >= 0 and yy < 270:
+                t = i / d if d != 0 else 0
+                db.tline3d(
                     sprite,
-                    x0, # xy[id[1]].x,
-                    y,  # xy[id[1]].y + i,
-                    x1, # xy[id[4]].x,
-                    y,  # xy[id[1]].y + i,
+                    x0,
+                    yy,
+                    x1,
+                    yy,
                     lu * t + uv[id[1]].u,
                     lv * t + uv[id[1]].v,
                     ru * t + uv[id[2]].u,
@@ -208,19 +210,19 @@ def sprspr(sprite, u, v, w, h, x, y, offset_x, offset_y, scale_x, scale_y, rotat
         ry = xy[re].y - xy[rs].y
         ri = 0
         d = xy[id[4]].y - xy[id[1]].y
-        for i in range(d):
-            lt = li / ly
-            rt = ri / ry
+        for i in range(d + 1):
+            lt = li / ly if ly != 0 else 0
+            rt = ri / ry if ry != 0 else 0
             x0 = lx * lt + xy[ls].x
             x1 = rx * rt + xy[rs].x
-            y = li + xy[ls].y #ly * lt + xy[ls].y
-            if x0 < 480 and x1 >= 0 and y >= 0 and y < 270:
-                tline3d(
+            yy = li + xy[ls].y
+            if x0 < 480 and x1 >= 0 and yy >= 0 and yy < 270:
+                db.tline3d(
                     sprite,
-                    x0, # lx * lt + xy[ls].x,
-                    y,  # ly * lt + xy[ls].y,
-                    x1, # rx * rt + xy[rs].x,
-                    y,  # ry * rt + xy[rs].y,
+                    x0,
+                    yy,
+                    x1,
+                    yy,
                     lu * lt + uv[ls].u,
                     lv * lt + uv[ls].v,
                     ru * rt + uv[rs].u,
@@ -249,14 +251,14 @@ def sprspr(sprite, u, v, w, h, x, y, offset_x, offset_y, scale_x, scale_y, rotat
                 ry = xy[re].y - xy[rs].y
                 ri = 0
 
-# sort sprite
+# sort sprite (descending by ofs_z; t and [first, last] are 0-based/inclusive)
 def spqsort(t, first, last):
     sp = db.sp
     if first > last:
         return
 
     p = first
-    for i in range(first + 1, last):
+    for i in range(first + 1, last + 1):
         if sp[t[i]].ofs_z > sp[t[first]].ofs_z:
             p = p + 1
             t[p], t[i] = t[i], t[p]
@@ -269,11 +271,11 @@ def spqsort(t, first, last):
 def spdraw():
     sp = db.sp
     order = []
-    for i in range(1, 512):
+    for i in range(512):
         if sp[i].show:
             order.append(i)
 
-    spqsort(order, 1, len(order))
+    spqsort(order, 0, len(order) - 1)
     for i in range(len(order)):
         n = order[i]
         if sp[n].color != 0x07:
