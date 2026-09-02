@@ -305,6 +305,14 @@ inline const std::vector<int>& ending_group() {
 } // namespace audio
 
 inline void sfx(int n) {
+    // sfx(22): mycar.hpp's myfall() (matching mycar.lua exactly) calls
+    // this when the car goes off the edge. The user checked the original
+    // game running on the web and confirmed falling is silent there --
+    // only the rival/tree collision impact (sfx(23), mycrsh()) makes a
+    // sound -- even though extracted track 22 does hold real note data.
+    // So this is muted at the audio layer rather than by removing the
+    // sfx(22) call from mycar.hpp, keeping that file a faithful port.
+    if (n == 22) return;
     audio::play_track_no(n, false);
 }
 
