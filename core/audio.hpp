@@ -126,13 +126,17 @@ inline void stop_all_looping() {
 // -- multi-section songs ---------------------------------------------------
 //
 // The user reported that the race BGM they remember has two distinct
-// phrase types played in sequence (long phrase x2, short phrase x2,
-// repeating) -- not eight tracks all mixed together forever. tracks 0-7
-// and 8-17 (see tools/gen_sfx_data.py) are almost certainly exactly those
-// two sections; without the sfx pod's Pattern data (never decoded with
-// confidence -- see project notes) there's no confirmed source for the
-// real play order, so this cycles through stages on a timer sized to each
-// section's own row count instead.
+// phrase types played long,long,short,short (repeating) -- not eight
+// tracks all mixed together forever. tracks 0-7 and 8-17 (see
+// tools/gen_sfx_data.py) are almost certainly exactly those two sections.
+// Every extracted track has loop0 >= loop1 (no self-loop), so a track
+// played once just stops -- the "x2" repeats have to be the sequencer
+// explicitly re-triggering the same section twice, not a track looping
+// itself. Without the sfx pod's Pattern data (attempted twice, never
+// decoded with confidence -- see project notes; the "next pattern" index
+// values it produced were nonsense) there's no confirmed source for the
+// real section order/lengths, so this just cycles a hard-coded stage list
+// on a timer sized to one natural track loop (64 rows) instead.
 struct MusicStage {
     std::vector<int> track_nos;
     double hold_seconds;
@@ -208,8 +212,12 @@ inline void render(float* out, int n_frames, int sample_rate) {
 
         for (int i = 0; i < n_frames; i++) {
             if (v.row >= 64) {
-                if (v.loop) { v.row = 0; v.row_elapsed_ticks = 0; }
-                else { stop_voice(v); break; }
+                // every extracted track has loop0 >= loop1 (no self-loop --
+                // see project notes), so a track always just plays once and
+                // stops; repetition is entirely the section sequencer's
+                // job (re-triggering fresh voices), not this row wrapping.
+                stop_voice(v);
+                break;
             }
             int pitch = t.pitch[v.row];
             int vol = t.vol[v.row];
@@ -257,14 +265,18 @@ inline void music(int n) {
     audio::stop_all_looping();
     if (n < 0) return;
     if (n == 0) {
-        // Race BGM: reportedly two distinct phrases played
-        // long,long,short,short (repeating), not eight tracks droning on
-        // forever -- see the MusicStage comment above. Which of the two
-        // track groups is "long" vs "short" is a guess; swap the two
-        // MusicStage entries below if it turns out backwards.
+        // Race BGM: reportedly long,long,short,short (repeating) -- four
+        // explicit re-triggers of two track groups, since (per the
+        // MusicStage comment above) no track loops itself. Which group is
+        // "long" vs "short" is a guess; swap the A/B stages below if it
+        // turns out backwards.
+        static const std::vector<int> section_a = {0, 1, 2, 3, 4, 5, 6, 7};
+        const std::vector<int>& section_b = audio::fanfare_group();
         audio::start_sequence({
-            {{0, 1, 2, 3, 4, 5, 6, 7}, audio::kSectionLoopSeconds * 2},
-            {audio::fanfare_group(), audio::kSectionLoopSeconds * 2},
+            {section_a, audio::kSectionLoopSeconds},
+            {section_a, audio::kSectionLoopSeconds},
+            {section_b, audio::kSectionLoopSeconds},
+            {section_b, audio::kSectionLoopSeconds},
         });
         return;
     }
