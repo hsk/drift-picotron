@@ -279,7 +279,12 @@ inline void myfall() {
         mycar.smk_++;
         if ((mycar.smc_ & 4) > 0) mycar.smk_++;
     }
-    if (mycar.ypt_ == 16) sfx(22);
+    // mycar.lua calls sfx(22) here (at the fall's midpoint), but the user
+    // confirmed on the original web version that falling is silent --
+    // sfx(22) is actually the rival/tree collision impact sound (now
+    // played from mychit() instead, see its comment). Left commented
+    // rather than deleted so the deviation from the original source stays
+    // visible: `if (mycar.ypt_ == 16) sfx(22);`
     if (mycar.ypt_ > 80) { mycar.prc_ = myrest; mycar.prm_ = 0; }
 }
 
@@ -358,6 +363,12 @@ inline void mychit() {
             if (obj.hit_[mycar.lpi_][1 + f] > 0) mycar.hit_ = sgn(-mycar.sde_);
         }
     }
+    // Not in the original mycar.lua (which has no sfx() call here at all)
+    // -- added per direct user confirmation from the original web version:
+    // the impact sound on hitting a rival car or roadside object (tree/
+    // cone) is sfx(22), not sfx(23) (which mycrsh() already plays once
+    // when the crash *state* is entered) or sfx(21) (steering warning).
+    if (mycar.hit_ != 0) sfx(22);
 }
 
 inline void mydraw() {
