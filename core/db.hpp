@@ -14,6 +14,7 @@
 #include <vector>
 #include <memory>
 #include <algorithm>
+#include <cstdlib>
 
 namespace db {
 
@@ -131,6 +132,11 @@ inline void palt(int idx, bool flag) { palt_flags[idx] = flag; }
 inline double dsin(double x) { return -std::sin(x * 2.0 * M_PI); }
 inline double dcos(double x) { return std::cos(x * 2.0 * M_PI); }
 inline double dceil(double x) { return std::ceil(x); }
+
+// -- misc picotron/pico-8-style builtins -------------------------------
+
+inline double sgn(double x) { return x >= 0 ? 1.0 : -1.0; }
+inline double rnd(double x = 1.0) { return (double)std::rand() / ((double)RAND_MAX + 1.0) * x; }
 
 // -- drawing ------------------------------------------------------------
 

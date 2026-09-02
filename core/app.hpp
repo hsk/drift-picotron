@@ -1,9 +1,9 @@
 // app.hpp : application
 //
-// Mirrors app.lua/app.py. race/course/obj/rival/mycar/signal/rank/clear/
-// over/navi/cockpit/back are still Lua-only and not yet ported, so gminit()
-// / gmloop() (game.hpp) are placeholder stubs -- the title screen is fully
-// wired up and is where app.proc_ starts and (for now) stays.
+// Mirrors app.lua/app.py. rank/navi/cockpit/back (HUD polish) and rival
+// (AI cars, deliberately deferred) are still stubs -- see their headers.
+// Everything else (title, race flow, course, objects, player car, signal,
+// clear/over) is wired up.
 #pragma once
 #include "db.hpp"
 #include "sp.hpp"
@@ -12,6 +12,7 @@
 #include "chara.hpp"
 #include "car.hpp"
 #include "pause.hpp"
+#include "cam.hpp"
 #include "game.hpp"
 #include "title.hpp"
 
@@ -46,6 +47,19 @@ inline void app_init() {
     psinit();
     tlinit();
     gminit();
+    rcinit();
+    cminit();
+    csinit();
+    obinit();
+    rvinit();
+    myinit();
+    sginit();
+    rkinit();
+    gcinit();
+    goinit();
+    nvinit();
+    cpinit();
+    bkinit();
 }
 
 // update
@@ -74,8 +88,8 @@ inline void app_update() {
         0b00000100, 0b00001000, 0b00000001, 0b00000010,
         0b00010000, 0b00100000, 0b01000000, 0b00000000,
     };
-    for (int i = 1; i < 8; i++)
-        if (btn(i - 1)) b |= b2b[i];
+    for (int i = 0; i < 8; i++)
+        if (btn(i)) b |= b2b[i];
 
     // control pause
     if (keyp('p')) app.pause_ = 1 - app.pause_;
