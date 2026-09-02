@@ -70,7 +70,9 @@ inline std::array<Voice, kMaxVoices> voices;
 // ESP32-P4 too). Without this, e.g. music() reassigning a voice mid-way
 // through render() stepping it can tear its row/phase state -- observed
 // as playback that never seems to advance past its first note/row.
-inline std::mutex voices_mutex;
+// Recursive because the section sequencer (see below) needs to start/stop
+// voices from inside render(), which already holds the lock for mixing.
+inline std::recursive_mutex voices_mutex;
 
 inline void stop_voice(Voice& v) {
     v.active = false;
@@ -90,7 +92,7 @@ inline void stop_voice(Voice& v) {
 inline bool play_track_no(int track_no, bool loop) {
     const SfxTrackDef* t = find_sfx_track(track_no);
     if (!t) return false;
-    std::lock_guard<std::mutex> lock(voices_mutex);
+    std::lock_guard<std::recursive_mutex> lock(voices_mutex);
     for (auto& v : voices) {
         if (v.active && v.track == t) {
             v.loop = loop;
@@ -112,9 +114,79 @@ inline bool play_track_no(int track_no, bool loop) {
 }
 
 inline void stop_all_looping() {
-    std::lock_guard<std::mutex> lock(voices_mutex);
+    std::lock_guard<std::recursive_mutex> lock(voices_mutex);
     for (auto& v : voices)
         if (v.active && v.loop) stop_voice(v);
+}
+
+// -- multi-section songs ---------------------------------------------------
+//
+// The user reported that the race BGM they remember has two distinct
+// phrase types played in sequence (long phrase x2, short phrase x2,
+// repeating) -- not eight tracks all mixed together forever. tracks 0-7
+// and 8-17 (see tools/gen_sfx_data.py) are almost certainly exactly those
+// two sections; without the sfx pod's Pattern data (never decoded with
+// confidence -- see project notes) there's no confirmed source for the
+// real play order, so this cycles through stages on a timer sized to each
+// section's own row count instead.
+struct MusicStage {
+    std::vector<int> track_nos;
+    double hold_seconds;
+};
+struct MusicSequencer {
+    std::vector<MusicStage> stages;
+    int stage_idx = -1;
+    double elapsed = 0;
+    bool active = false;
+};
+inline MusicSequencer music_seq;
+
+// caller must already hold voices_mutex
+inline void enter_stage_locked(int idx) {
+    for (auto& v : voices)
+        if (v.active && v.loop) stop_voice(v);
+    music_seq.stage_idx = idx;
+    music_seq.elapsed = 0;
+    if (idx < 0 || idx >= (int)music_seq.stages.size()) return;
+    for (int track_no : music_seq.stages[idx].track_nos) {
+        const SfxTrackDef* t = find_sfx_track(track_no);
+        if (!t) continue;
+        for (auto& v : voices) {
+            if (!v.active) {
+                v.track = t; v.active = true; v.loop = true;
+                v.row_elapsed_ticks = 0; v.row = 0; v.phase = 0;
+                break;
+            }
+        }
+    }
+}
+
+inline void start_sequence(std::vector<MusicStage> stages) {
+    std::lock_guard<std::recursive_mutex> lock(voices_mutex);
+    music_seq.stages = std::move(stages);
+    music_seq.active = !music_seq.stages.empty();
+    enter_stage_locked(music_seq.active ? 0 : -1);
+}
+
+inline void stop_sequence() {
+    std::lock_guard<std::recursive_mutex> lock(voices_mutex);
+    music_seq.active = false;
+    music_seq.stages.clear();
+    for (auto& v : voices)
+        if (v.active && v.loop) stop_voice(v);
+}
+
+// advances the section timer by n_frames/sample_rate seconds, switching to
+// the next stage once the current one's hold time elapses. Caller must
+// already hold voices_mutex.
+inline void advance_sequence_locked(double dt_seconds) {
+    if (!music_seq.active || music_seq.stages.empty()) return;
+    music_seq.elapsed += dt_seconds;
+    const auto& cur = music_seq.stages[music_seq.stage_idx < 0 ? 0 : music_seq.stage_idx];
+    if (music_seq.elapsed >= cur.hold_seconds) {
+        int next = (music_seq.stage_idx + 1) % (int)music_seq.stages.size();
+        enter_stage_locked(next);
+    }
 }
 
 // mixes `n_frames` mono samples (each in roughly [-1,1] before the caller's
@@ -123,7 +195,8 @@ inline void stop_all_looping() {
 inline void render(float* out, int n_frames, int sample_rate) {
     for (int i = 0; i < n_frames; i++) out[i] = 0;
 
-    std::lock_guard<std::mutex> lock(voices_mutex);
+    std::lock_guard<std::recursive_mutex> lock(voices_mutex);
+    advance_sequence_locked((double)n_frames / sample_rate);
     for (auto& v : voices) {
         if (!v.active || !v.track) continue;
         const SfxTrackDef& t = *v.track;
@@ -159,21 +232,14 @@ inline void render(float* out, int n_frames, int sample_rate) {
     }
 }
 
-// which underlying tracks each music() id loops together, see
-// tools/gen_sfx_data.py's docstring for how track numbering was found:
-// tracks 0-7 are one 8-part BGM arrangement, 8-17 a second (fanfare-ish)
-// section, and 18-23 map 1:1 to the game's sfx(18..23) one-shots.
-inline const std::vector<int>& music_group(int n) {
-    static const std::vector<int> race_bgm = {0, 1, 2, 3, 4, 5, 6, 7};
-    static const std::vector<int> fanfare = {8, 9, 10, 11, 12, 13, 14, 15, 16, 17};
-    static const std::vector<int> empty = {};
-    switch (n) {
-        case 0: return race_bgm;
-        case 4:
-        case 5:
-        case 6: return fanfare;
-        default: return empty;
-    }
+// track numbering per tools/gen_sfx_data.py: tracks 0-7 are one 8-part BGM
+// section, 8-17 a second section, and 18-23 map 1:1 to the game's
+// sfx(18..23) one-shots. ~4.27s = one 64-row loop at spd=8, 120 ticks/sec.
+constexpr double kSectionLoopSeconds = 64.0 * 8.0 / kTicksPerSecond;
+
+inline const std::vector<int>& fanfare_group() {
+    static const std::vector<int> g = {8, 9, 10, 11, 12, 13, 14, 15, 16, 17};
+    return g;
 }
 
 } // namespace audio
@@ -183,9 +249,24 @@ inline void sfx(int n) {
 }
 
 inline void music(int n) {
+    audio::stop_sequence();
     audio::stop_all_looping();
     if (n < 0) return;
-    for (int track_no : audio::music_group(n))
+    if (n == 0) {
+        // Race BGM: reportedly two distinct phrases played
+        // long,long,short,short (repeating), not eight tracks droning on
+        // forever -- see the MusicStage comment above. Which of the two
+        // track groups is "long" vs "short" is a guess; swap the two
+        // MusicStage entries below if it turns out backwards.
+        audio::start_sequence({
+            {{0, 1, 2, 3, 4, 5, 6, 7}, audio::kSectionLoopSeconds * 2},
+            {audio::fanfare_group(), audio::kSectionLoopSeconds * 2},
+        });
+        return;
+    }
+    // stage-clear / game-over stingers: just loop the second section once
+    // per call, no confirmed data on how these should really differ.
+    for (int track_no : audio::fanfare_group())
         audio::play_track_no(track_no, true);
 }
 
