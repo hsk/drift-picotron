@@ -214,7 +214,14 @@ inline void mydrivctrl() {
 }
 
 inline void mydrivauto() {
-    mycar.hdl_ -= std::min(mycar.hdp_, std::max(-mycar.hdp_, mycar.hdl_));
+    // Not in the original mycar.lua (which just relaxes hdl_ straight to
+    // 0 here) -- this function only ever runs in the app.debug_ autopilot
+    // dev mode (see app.hpp's 'a' key toggle), so making it wobble the
+    // wheel doesn't touch normal manual play at all. Requested so the
+    // steering-warning buzz (sfx(21), mydrivctrl()'s `abs(hdl_) > 0.75`)
+    // and the camera roll mycamr() derives from hdl_ are still
+    // audible/visible while auto-driving instead of always sitting at 0.
+    mycar.hdl_ = 0.9 * dsin(mycar.lpd_ * 0.05);
     mymove();
     mycamr();
     double h = 0;
