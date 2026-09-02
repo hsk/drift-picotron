@@ -183,6 +183,7 @@ struct MusicSequencer {
     int stage_idx = -1;
     double elapsed = 0;
     bool active = false;
+    bool loop_sequence = true; // if false, stop (silently) after the last stage
 };
 inline MusicSequencer music_seq;
 
@@ -206,9 +207,10 @@ inline void enter_stage_locked(int idx) {
     }
 }
 
-inline void start_sequence(std::vector<MusicStage> stages) {
+inline void start_sequence(std::vector<MusicStage> stages, bool loop_sequence = true) {
     std::lock_guard<std::recursive_mutex> lock(voices_mutex);
     music_seq.stages = std::move(stages);
+    music_seq.loop_sequence = loop_sequence;
     music_seq.active = !music_seq.stages.empty();
     enter_stage_locked(music_seq.active ? 0 : -1);
 }
@@ -229,6 +231,16 @@ inline void advance_sequence_locked(double dt_seconds) {
     music_seq.elapsed += dt_seconds;
     const auto& cur = music_seq.stages[music_seq.stage_idx < 0 ? 0 : music_seq.stage_idx];
     if (music_seq.elapsed >= cur.hold_seconds) {
+        bool at_last_stage = music_seq.stage_idx >= (int)music_seq.stages.size() - 1;
+        if (at_last_stage && !music_seq.loop_sequence) {
+            // one-shot sequence (e.g. music(4)'s ending): let it finish
+            // and go quiet instead of wrapping back to stage 0 -- without
+            // this a single-stage "play once" sequence re-entered its own
+            // only stage forever (reported as "the clear music loops
+            // twice"/never actually stops).
+            music_seq.active = false;
+            return;
+        }
         int next = (music_seq.stage_idx + 1) % (int)music_seq.stages.size();
         enter_stage_locked(next);
     }
@@ -342,7 +354,7 @@ inline void music(int n) {
         // already end on their own fade-out.
         audio::start_sequence({
             {{8, 9, 10}, audio::kSectionLoopSeconds},
-        });
+        }, /*loop_sequence=*/false);
         return;
     }
     if (n == 5) {
@@ -353,7 +365,7 @@ inline void music(int n) {
         // this its own distinct identity instead.
         audio::start_sequence({
             {{11, 12, 13}, audio::kSectionLoopSeconds},
-        });
+        }, /*loop_sequence=*/false);
         return;
     }
     // game-over stinger (music(6)): track pairs 14&15, 16&17 cycling,
