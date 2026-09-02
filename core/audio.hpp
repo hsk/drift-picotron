@@ -316,9 +316,21 @@ inline void music(int n) {
         });
         return;
     }
-    // stage-clear / game-over stingers: reported as track pairs 14&15,
-    // 16&17 cycling, same paired style as the race BGM. No confirmed data
-    // on how music(4) vs (5) vs (6) should really differ, so all three
+    if (n == 4) {
+        // Final-stage clear: game.lua calls music(4) here specifically
+        // (vs music(5) for an ordinary stage clear), so it's meant to be
+        // a distinct "true ending" cue. Tracks 8-10 (their own tempo,
+        // fade-out ending, otherwise unused by anything else) are the
+        // best fit for that -- single pass, no pair-cycling, since they
+        // already end on their own fade-out.
+        audio::start_sequence({
+            {{8, 9, 10}, audio::kSectionLoopSeconds},
+        });
+        return;
+    }
+    // stage-clear (non-final) / game-over stingers: reported as track
+    // pairs 14&15, 16&17 cycling, same paired style as the race BGM. No
+    // confirmed data on how music(5) vs (6) should really differ, so both
     // just play this same pair sequence.
     audio::start_sequence({
         {{14, 15}, audio::kSectionLoopSeconds},
