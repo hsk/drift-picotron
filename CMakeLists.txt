@@ -34,6 +34,15 @@ target_link_directories(title_demo PRIVATE ${SDL2_LIBRARY_DIRS})
 target_link_libraries(title_demo PRIVATE ${SDL2_LIBRARIES})
 target_compile_options(title_demo PRIVATE ${SDL2_CFLAGS_OTHER})
 
+# dev tool: plays exactly one extracted sfx track in a loop, LEFT/RIGHT to
+# switch tracks -- for auditioning individual tracks/instruments in
+# isolation while tuning core/audio.hpp's mixer.
+add_executable(track_player platform/sdl2/track_player.cpp)
+target_include_directories(track_player PRIVATE core platform/sdl2 ${SDL2_INCLUDE_DIRS})
+target_link_directories(track_player PRIVATE ${SDL2_LIBRARY_DIRS})
+target_link_libraries(track_player PRIVATE ${SDL2_LIBRARIES})
+target_compile_options(track_player PRIVATE ${SDL2_CFLAGS_OTHER})
+
 # dev tool: lays every character-sprite definition out on screen and dumps a
 # PNG, to sanity-check pixel/palette conversion without eyeballing a live
 # window. Needs SDL2_image only for PNG encoding.
