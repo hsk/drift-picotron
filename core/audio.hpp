@@ -45,6 +45,14 @@ inline Wave wave_for_track(int track_no) {
     return (track_no % 2 == 0) ? Wave::Square : Wave::Triangle;
 }
 
+// see render()'s comment on loop_limit -- track 21 (tire slip warning) is
+// the one confirmed case so far of a sfx that needs to buzz continuously
+// for as long as its caller keeps re-triggering it, rather than play a
+// single short blip. Extend this set if more turn up.
+inline bool wants_continuous_loop(int track_no) {
+    return track_no == 21;
+}
+
 inline double wave_sample(Wave w, double phase01) {
     double p = phase01 - std::floor(phase01); // wrap to [0,1)
     switch (w) {
@@ -209,15 +217,25 @@ inline void render(float* out, int n_frames, int sample_rate) {
         if (!v.active || !v.track) continue;
         const SfxTrackDef& t = *v.track;
         double ticks_per_sample = kTicksPerSecond / sample_rate;
+        // Every extracted track has loop0 >= loop1 in the general sense
+        // (see project notes), so nothing self-loops through its full 64
+        // rows -- except a handful of one-shot sfx (like track 21, tire
+        // slip) whose *caller* holds them down every tick with no edge
+        // detection and are expected to buzz continuously the whole time,
+        // not play a ~1s blip-then-silence once per call. For exactly
+        // those, loop just the short intro (rows [0, loop0)) instead of
+        // stopping -- see wants_continuous_loop().
+        int loop_limit = (wants_continuous_loop(t.track_no) && t.loop0 > 0) ? t.loop0 : 64;
 
         for (int i = 0; i < n_frames; i++) {
-            if (v.row >= 64) {
-                // every extracted track has loop0 >= loop1 (no self-loop --
-                // see project notes), so a track always just plays once and
-                // stops; repetition is entirely the section sequencer's
-                // job (re-triggering fresh voices), not this row wrapping.
-                stop_voice(v);
-                break;
+            if (v.row >= loop_limit) {
+                if (loop_limit < 64) {
+                    v.row = 0;
+                    v.row_elapsed_ticks = 0;
+                } else {
+                    stop_voice(v);
+                    break;
+                }
             }
             int pitch = t.pitch[v.row];
             int vol = t.vol[v.row];

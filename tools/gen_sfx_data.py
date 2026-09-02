@@ -135,9 +135,10 @@ def extract_tracks(decoded):
         if all(p == 0xFF for p in pitch):
             continue
         spd = decoded[off + 2]
+        loop0 = decoded[off + 3]  # see TrackHeader comment in sfx_data.hpp
         inst = decoded[off + 8 + 64: off + 8 + 128]
         vol = decoded[off + 8 + 128: off + 8 + 192]
-        tracks.append((i, spd, list(pitch), list(inst), list(vol)))
+        tracks.append((i, spd, loop0, list(pitch), list(inst), list(vol)))
     return tracks
 
 
@@ -151,17 +152,20 @@ def emit_cpp(tracks, out_path):
     lines.append("struct SfxTrackDef {")
     lines.append("    int track_no;")
     lines.append("    int spd;             // ticks per row")
+    lines.append("    int loop0;           // row to loop back to for tracks played on a")
+    lines.append("                         // held/repeating trigger (see audio.hpp's")
+    lines.append("                         // wants_continuous_loop) -- 0 if unused")
     lines.append("    unsigned char pitch[64];  // picotron pitch, 0xff = rest (48 = middle C)")
     lines.append("    unsigned char inst[64];   // instrument id, 0xff = n/a")
     lines.append("    unsigned char vol[64];    // 0-64, 0xff = n/a")
     lines.append("};")
     lines.append("")
     lines.append(f"inline const SfxTrackDef kSfxTracks[] = {{")
-    for track_no, spd, pitch, inst, vol in tracks:
+    for track_no, spd, loop0, pitch, inst, vol in tracks:
         p = ",".join(str(v) for v in pitch)
         ii = ",".join(str(v) for v in inst)
         vv = ",".join(str(v) for v in vol)
-        lines.append(f"    {{ {track_no}, {spd}, {{{p}}}, {{{ii}}}, {{{vv}}} }},")
+        lines.append(f"    {{ {track_no}, {spd}, {loop0}, {{{p}}}, {{{ii}}}, {{{vv}}} }},")
     lines.append("};")
     lines.append(f"inline constexpr int kSfxTracks_count = {len(tracks)};")
     lines.append("")
