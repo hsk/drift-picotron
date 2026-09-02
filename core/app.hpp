@@ -1,9 +1,9 @@
 // app.hpp : application
 //
-// Mirrors app.lua/app.py. navi/cockpit (mini-map, dashboard overlay) are
-// still no-op stubs -- see their headers. Everything else (title, race
-// flow, course, background, objects, player car, rival AI, rank/finish
-// tracking, signal, clear/over) is wired up.
+// Mirrors app.lua/app.py. Every module (title, race flow, course,
+// background, objects, player car, rival AI, rank/finish tracking, signal,
+// clear/over, mini-map, dashboard HUD) is wired up. Sound (sfx/0.sfx) is
+// the one deliberately-deferred piece -- see db.hpp's sfx()/music().
 #pragma once
 #include "db.hpp"
 #include "sp.hpp"

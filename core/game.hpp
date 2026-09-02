@@ -1,10 +1,5 @@
 // game.hpp : top-level game state machine (title hand-off -> race -> clear/
 // over -> back to title)
-//
-// rank/navi/cockpit/back are still stubs (core/{rank,navi,cockpit,back}.hpp)
-// -- their loop/draw calls are wired in below (matching gmloop's original
-// call list) so adding the real implementations later is a pure fill-in,
-// but for now they're no-ops.
 #pragma once
 #include "db.hpp"
 #include "sp.hpp"
