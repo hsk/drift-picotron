@@ -5,7 +5,7 @@ BUILD_DIR := build
 BUILD_TYPE ?= Debug
 SPRITE_PNG := $(BUILD_DIR)/sprite_sheet.png
 
-.PHONY: all build run test tsp clean
+.PHONY: all build run test tsp title clean
 
 all: build
 
@@ -18,6 +18,10 @@ build: $(BUILD_DIR)/CMakeCache.txt
 # run the actual game window
 run: build
 	./$(BUILD_DIR)/drift_sdl2
+
+# title screen only, looping forever (never hands off to the game stub)
+title: build
+	./$(BUILD_DIR)/title_demo
 
 # headless regression test for core/*.hpp (no window, no SDL needed)
 test: build

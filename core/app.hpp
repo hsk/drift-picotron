@@ -1,18 +1,21 @@
 // app.hpp : application
 //
-// Mirrors app.lua/app.py. Only sp/bg/color/chara are wired up so far --
-// pause/title/game/race/... are still Lua-only and not yet ported, so
-// app.proc_ points at a no-op placeholder instead of tlloop for now.
+// Mirrors app.lua/app.py. race/course/obj/rival/mycar/signal/rank/clear/
+// over/navi/cockpit/back are still Lua-only and not yet ported, so gminit()
+// / gmloop() (game.hpp) are placeholder stubs -- the title screen is fully
+// wired up and is where app.proc_ starts and (for now) stays.
 #pragma once
 #include "db.hpp"
 #include "sp.hpp"
 #include "bg.hpp"
 #include "color.hpp"
 #include "chara.hpp"
+#include "car.hpp"
+#include "pause.hpp"
+#include "game.hpp"
+#include "title.hpp"
 
 namespace db {
-
-inline void noop_proc() {}
 
 // create application instance
 inline void app_init() {
@@ -28,7 +31,7 @@ inline void app_init() {
     app.or_ = 256;
     app.zn_ = 2;
     app.zf_ = 48;
-    app.proc_ = noop_proc;
+    app.proc_ = tlloop;
     app.vsync_ = 2;
     app.sound_ = true;
 
@@ -39,6 +42,10 @@ inline void app_init() {
     // initialize others
     clinit();
     chinit();
+    cainit();
+    psinit();
+    tlinit();
+    gminit();
 }
 
 // update
@@ -89,6 +96,10 @@ inline void app_update() {
 
         // update scene
         if (app.pause_ == 0 && app.proc_) app.proc_();
+
+        // update pause
+        psloop();
+        psdraw();
     } else {
         // skip frame
         app.bl_ = b;

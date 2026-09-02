@@ -199,6 +199,12 @@ inline void tline3d(Userdata* sprite, double x0, double y0, double x1, double y1
 inline void mset(int, int, int) {}
 inline void bg_map(int, int, int, int) {}
 
+// -- audio (deferred; sfx/0.sfx's binary format is unreverse-engineered, see
+//    project notes -- these are no-ops so callers compile/link cleanly) ----
+
+inline void sfx(int) {}
+inline void music(int) {}
+
 // -- input (platform layer fills these in once per frame) -------------------
 
 struct Input {

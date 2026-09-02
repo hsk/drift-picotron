@@ -26,6 +26,14 @@ target_link_directories(drift_sdl2 PRIVATE ${SDL2_LIBRARY_DIRS})
 target_link_libraries(drift_sdl2 PRIVATE ${SDL2_LIBRARIES})
 target_compile_options(drift_sdl2 PRIVATE ${SDL2_CFLAGS_OTHER})
 
+# title-screen-only demo (`make title`) -- pins app.proc_ to tlloop so it
+# never hands off to the (still-stub) game loop.
+add_executable(title_demo platform/sdl2/main_title.cpp)
+target_include_directories(title_demo PRIVATE core platform/sdl2 ${SDL2_INCLUDE_DIRS})
+target_link_directories(title_demo PRIVATE ${SDL2_LIBRARY_DIRS})
+target_link_libraries(title_demo PRIVATE ${SDL2_LIBRARIES})
+target_compile_options(title_demo PRIVATE ${SDL2_CFLAGS_OTHER})
+
 # dev tool: lays every character-sprite definition out on screen and dumps a
 # PNG, to sanity-check pixel/palette conversion without eyeballing a live
 # window. Needs SDL2_image only for PNG encoding.
