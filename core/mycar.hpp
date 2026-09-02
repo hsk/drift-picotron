@@ -365,7 +365,11 @@ inline void mycamr() {
     double s = app.or_ / (z / 2);
     cam.rx_ = x * s + app.ox_;
     cam.ry_ = y * s + app.oy_;
-    cam.ra_ = -(15 * std::min(1.0, std::abs(mycar.hdl_)) * sgn(mycar.hdl_));
+    // Deliberately flipped from mycar.lua's `-(15 * ... )`: the user
+    // wants the camera to bank the opposite way (G-force side toward the
+    // bottom of the screen, like Power Drift), even though that's the
+    // reverse of how the original Picot Drift rolls the camera.
+    cam.ra_ = (15 * std::min(1.0, std::abs(mycar.hdl_)) * sgn(mycar.hdl_));
     cam.rs_ = dsin((cam.ra_ * M_PI / 180) / (2 * M_PI));
     cam.rc_ = dcos((cam.ra_ * M_PI / 180) / (2 * M_PI));
 }
