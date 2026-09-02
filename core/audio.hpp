@@ -69,21 +69,21 @@ inline void stop_voice(Voice& v) {
 }
 
 // start a one-shot (sfx) or looping (music) voice for a track number. If
-// that exact track is already playing, retrigger it in place instead of
-// grabbing a new slot -- some call sites (e.g. mycar.hpp's mydrivctrl,
-// matching the original mycar.lua) call sfx() every tick for as long as a
-// condition holds, with no edge detection, so without this a held input
-// would keep allocating voices until every slot was gone and later
-// sounds (including music()'s own tracks) would silently fail to start.
+// that exact track is already playing, leave it alone (don't restart it)
+// instead of grabbing a new slot -- some call sites (e.g. mycar.hpp's
+// mydrivctrl, matching the original mycar.lua) call sfx() every tick for
+// as long as a condition holds, with no edge detection. Restarting on
+// every one of those calls would re-trigger far faster than the sfx's own
+// tempo, getting stuck retriggering just its first note (heard as a
+// stuck buzz) instead of playing through it; always grabbing a new slot
+// would instead exhaust every slot within a second or two, silently
+// starving later sounds (including music()'s own tracks) of a free voice.
 inline bool play_track_no(int track_no, bool loop) {
     const SfxTrackDef* t = find_sfx_track(track_no);
     if (!t) return false;
     for (auto& v : voices) {
         if (v.active && v.track == t) {
             v.loop = loop;
-            v.row_elapsed_ticks = 0;
-            v.row = 0;
-            v.phase = 0;
             return true;
         }
     }
