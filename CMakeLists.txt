@@ -1,0 +1,32 @@
+cmake_minimum_required(VERSION 3.16)
+project(drift_picotron_sdl2 CXX)
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE RelWithDebInfo)
+endif()
+
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(SDL2 REQUIRED sdl2)
+
+# main desktop build: SDL2 only, no image-loading dependency needed at runtime.
+add_executable(drift_sdl2 platform/sdl2/main_sdl2.cpp)
+target_include_directories(drift_sdl2 PRIVATE core platform/sdl2 ${SDL2_INCLUDE_DIRS})
+target_link_directories(drift_sdl2 PRIVATE ${SDL2_LIBRARY_DIRS})
+target_link_libraries(drift_sdl2 PRIVATE ${SDL2_LIBRARIES})
+target_compile_options(drift_sdl2 PRIVATE ${SDL2_CFLAGS_OTHER})
+
+# dev tool: lays every character-sprite definition out on screen and dumps a
+# PNG, to sanity-check pixel/palette conversion without eyeballing a live
+# window. Needs SDL2_image only for PNG encoding.
+pkg_check_modules(SDL2_IMAGE SDL2_image)
+if(SDL2_IMAGE_FOUND)
+    add_executable(sprite_viewer platform/sdl2/sprite_viewer.cpp)
+    target_include_directories(sprite_viewer PRIVATE core platform/sdl2 ${SDL2_INCLUDE_DIRS} ${SDL2_IMAGE_INCLUDE_DIRS})
+    target_link_directories(sprite_viewer PRIVATE ${SDL2_LIBRARY_DIRS} ${SDL2_IMAGE_LIBRARY_DIRS})
+    target_link_libraries(sprite_viewer PRIVATE ${SDL2_LIBRARIES} ${SDL2_IMAGE_LIBRARIES})
+    target_compile_options(sprite_viewer PRIVATE ${SDL2_CFLAGS_OTHER} ${SDL2_IMAGE_CFLAGS_OTHER})
+else()
+    message(STATUS "SDL2_image not found; skipping sprite_viewer dev tool")
+endif()
