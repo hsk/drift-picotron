@@ -7,8 +7,17 @@ if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE RelWithDebInfo)
 endif()
 
+enable_testing()
+
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(SDL2 REQUIRED sdl2)
+
+# headless regression test for core/*.hpp -- no SDL dependency, so this is
+# the one target that will also build unchanged for a future ESP32-P4 host
+# test environment.
+add_executable(drift_test tests/test_render.cpp)
+target_include_directories(drift_test PRIVATE core)
+add_test(NAME render_test COMMAND drift_test)
 
 # main desktop build: SDL2 only, no image-loading dependency needed at runtime.
 add_executable(drift_sdl2 platform/sdl2/main_sdl2.cpp)
